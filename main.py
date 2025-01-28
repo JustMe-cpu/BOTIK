@@ -11,20 +11,33 @@ from aiogram.types import Message
 from dotenv import load_dotenv
 from pydantic.v1 import root_validator
 from States import Survey
+
 from keybord import reply_kb
-from keybord import inline_kbgit
+from keybord import inline_kb
+from db import Database
 
 load_dotenv()
 bot_token=os.getenv("TOKEN")
 
-
 bot = Bot(token=bot_token)
 dp = Dispatcher()
+db = Database(
+    user=os.getenv('DB_USER'),
+    password=os.getenv('DB_PASSWORD'),
+    host=os.getenv('DB_HOST'),
+    database=os.getenv('DB_NAME')
+)
 router = Router()
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
-    await message.answer("Выберите опцию:", reply_markup=reply_kb)
+    user = await db.check_user(message.from_user.id)
+    if not user:
+        await db.add_user(message.from_user.id, message.from_user.username, message.from_user.first_name,
+                          message.from_user.last_name)
+        await message.answer(f"Пивет {message.from_user.first_name}, я тебя запомнил чёрт")
+    else:
+        await message.answer(f"Я тебя помню {message.from_user.first_name}")
 
 @router.message(Command(commands='help'))
 async def cmd_help(message: Message):
@@ -32,7 +45,7 @@ async def cmd_help(message: Message):
 
 @router.message(Command(commands='info'))
 async def cmd_info(message: Message):
-    txt = ("Приветствую! Я-БотяраV1.\n"
+    txt = ("Приветствую! Я-Ботяра V.1\n"
            "Пока что я умею кидать ссылки, принимать фотографии,но в следующих вресиях... \n"
            "будет намного больше!\n"
            "<b>Мои команды:</b>\n"
@@ -81,8 +94,6 @@ async def process_color(message: Message, state: FSMContext):
     await message.answer(answer_text)
     await state.clear()
 
-
-
 @router.message(F.text == "Жив?")
 async def reply_text(message: Message):
     await message.reply(f"Да, а ты?")
@@ -100,9 +111,13 @@ async def reply_image(message: Message):
 
 async def main():
     print("starting bot...")
+    await  db.connect()
     dp=Dispatcher(storage=MemoryStorage())
     dp.include_router(router)
-    await dp.start_polling(bot)
+    try:
+        await dp.start_polling(bot)
+    finally:
+        await db.disconnect()
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -1,7 +1,6 @@
 from gc import callbacks
 
-from aiogram.types import keyboard_button, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, \
-    InlineKeyboardButton
+from aiogram.types import keyboard_button, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup,InlineKeyboardButton
 
 reply_kb = ReplyKeyboardMarkup(
     keyboard=[
